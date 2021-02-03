@@ -45,7 +45,7 @@ class ImagePicker {
 
     }
 
-    class Builder(private val activity: Activity) {
+   @Keep class Builder(private val activity: Activity) {
         private var fragment: Fragment? = null
 
         private val bundleHelper = BundleHelper()
