@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="angel.androidapps.imagepicker">
+
+<!--    <uses-permission-->
+<!--        android:name="android.permission.WRITE_EXTERNAL_STORAGE"-->
+<!--        android:maxSdkVersion="29"-->
+<!--        tools:ignore="ScopedStorage" />-->
+
+
+    <application>
+        <activity android:name="angel.androidapps.imagepicker.ImagePickerActivity" />
+
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.imagePicker.fileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            tools:replace="android:authorities">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths"
+                tools:replace="android:resource" />
+        </provider>
+
+    </application>
+
+    <!--        //https://stackoverflow.com/a/64204646/908821-->
+    <queries>
+        <!-- Camera -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <!--        &lt;!&ndash; Gallery &ndash;&gt;-->
+        <!--        <intent>-->
+        <!--            <action android:name="android.intent.action.GET_CONTENT" />-->
+        <!--        </intent>-->
+        <!--        &lt;!&ndash; Browser &ndash;&gt;-->
+        <!--        <intent>-->
+        <!--            <action android:name="android.intent.action.VIEW" />-->
+        <!--            <data android:scheme="http" />-->
+        <!--        </intent>-->
+    </queries>
+
+</manifest>

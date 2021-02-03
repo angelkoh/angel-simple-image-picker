@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <paths>
+        <cache-path
+            name="shared_files"
+            path="." />
+        <!--        path="shared/" />-->
+        <external-files-path
+            name="external_files_files"
+            path="." />
+        <external-path
+            name="external_files"
+            path="." />
+    </paths>
+</resources>
