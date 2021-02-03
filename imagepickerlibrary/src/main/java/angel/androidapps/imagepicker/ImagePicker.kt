@@ -18,7 +18,7 @@ import androidx.fragment.app.Fragment
 @Keep
 class ImagePicker {
 
-    companion object {
+   @Keep companion object {
 
 
 //        private const val TAG = "Angel: ImagePicker"
