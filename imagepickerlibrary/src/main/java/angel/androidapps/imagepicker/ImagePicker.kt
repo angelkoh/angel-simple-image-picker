@@ -5,6 +5,7 @@ package angel.androidapps.imagepicker
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.Keep
 import androidx.fragment.app.Fragment
 
 // * Created by Angel on 3/11/2020 1:34 PM.  
@@ -14,6 +15,7 @@ import androidx.fragment.app.Fragment
 /**
  * camera and image picker
  */
+@Keep
 class ImagePicker {
 
     companion object {

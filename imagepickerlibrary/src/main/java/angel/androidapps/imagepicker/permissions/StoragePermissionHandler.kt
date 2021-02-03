@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.annotation.Keep
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
@@ -12,6 +13,7 @@ import androidx.core.content.ContextCompat
 // * Originally created for project "ContinuousLineArt".
 // * Copyright (c) 2019 Angel. All rights reserved. 
 
+@Keep
 object StoragePermissionHandler {
 
     //STORAGE PERMISSIONS
