@@ -30,6 +30,13 @@ class BundleHelper {
         bundle.putBoolean(EXTRA_CAMERA_REPLACE_IF_EXISTING, replaceIfExist)
     }
 
+    fun multiSelect(multiSelect: Boolean) {
+        bundle.putBoolean(EXTRA_IMAGE_MULTI_SELECT, multiSelect)
+    }
+
+    fun selectVideo(useVideo: Boolean) {
+        bundle.putBoolean(EXTRA_USE_VIDEO, useVideo)
+    }
 
     companion object {
 
@@ -41,6 +48,12 @@ class BundleHelper {
         const val EXTRA_FILE_PATH = "extra.file_path"
         const val EXTRA_ERROR = "extra.error"
         const val EXTRA_FILE_LAST_MOD = "extra.file_last_modified"
+
+        //PHOTO
+        const val EXTRA_IMAGE_MULTI_SELECT = "extra.image_multi_select"
+
+        //VIDEO
+        const val EXTRA_USE_VIDEO = "extra.use_video"
 
         //CAMERA FILENAME
         const val EXTRA_CAMERA_REPLACE_IF_EXISTING = "extra.camera_replace_if_exist"

@@ -26,7 +26,19 @@ class MainActivity : AppCompatActivity() {
         tv = findViewById(R.id.tv_text)
         iv = findViewById(R.id.iv_image)
         findViewById<Button>(R.id.btn_take_picture).setOnClickListener { takePicture() }
-        findViewById<Button>(R.id.btn_select_image).setOnClickListener { selectPicture() }
+        findViewById<Button>(R.id.btn_select_image_single).setOnClickListener { selectPicture() }
+        findViewById<Button>(R.id.btn_select_video).setOnClickListener { selectVideo() }
+        findViewById<Button>(R.id.btn_select_image_multiple).setOnClickListener { selectMultiplePicture() }
+    }
+
+    private fun selectMultiplePicture() {
+        ImagePicker.with(this)
+
+            //.withCrop(getAvatarUri())
+            .withAspectRatio(2f, 3f)
+            .withMaxResultSize(200, 300)
+            .multiSelect()
+            .start(SELECT_PICTURE_REQ_CODE)
     }
 
     private fun selectPicture() {
@@ -36,6 +48,12 @@ class MainActivity : AppCompatActivity() {
             .withAspectRatio(2f, 3f)
             .withMaxResultSize(200, 300)
 
+            .start(SELECT_PICTURE_REQ_CODE)
+    }
+
+    private fun selectVideo() {
+        ImagePicker.with(this)
+            .selectVideo()
             .start(SELECT_PICTURE_REQ_CODE)
     }
 

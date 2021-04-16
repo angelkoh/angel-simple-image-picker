@@ -1,7 +1,8 @@
 <resources>
     <string name="app_name">Angel Image Picker</string>
 
-    <string name="label_select_picture" translatable="false">Select Image</string>
+    <string name="label_select_picture" >Select image</string>
+    <string name="label_select_video">Select video</string>
     <string name="fp_authority" translatable="false">fileProvider</string>
 
 

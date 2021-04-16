@@ -32,7 +32,6 @@ class ImagePicker {
             return Builder(fragment)
         }
 
-
         private fun getUri(data: Intent?) = data?.data
 
         fun getError(data: Intent?) = BundleHelper.getError(data)
@@ -79,6 +78,17 @@ class ImagePicker {
         }
 
 
+       fun selectVideo(): Builder {
+           bundleHelper.selectVideo(true)
+           return this
+       }
+
+       fun multiSelect(): Builder {
+            bundleHelper.multiSelect(true)
+           return this
+
+       }
+
         fun start(reqCode: Int) {
 
             val intent = Intent(activity, ImagePickerActivity::class.java)
@@ -91,5 +101,6 @@ class ImagePicker {
                 activity.startActivityForResult(intent, reqCode)
             }
         }
-    }
+
+   }
 }

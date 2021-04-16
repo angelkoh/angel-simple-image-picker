@@ -1,10 +1,7 @@
 package angel.androidapps.imagepicker
 
 import android.app.Activity
-import android.content.ClipData
-import android.content.ContentUris
-import android.content.ContentValues
-import android.content.Intent
+import android.content.*
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +9,7 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
+import android.webkit.MimeTypeMap
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
@@ -20,10 +18,15 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 @Keep
 class ImagePickerActivity : Activity() {
 
     private var lastModifiedDate = 0L
+
+    private var isMultiImageSelect = false
+
+    private var useVideo = false
 
     private var useCamera = false
     private var cameraFolderName = "Angel"
@@ -44,7 +47,9 @@ class ImagePickerActivity : Activity() {
 
         extractExtrasFromIntent()
 
-        if (useCamera) {
+        if (useVideo) {
+selectVideo()
+        } else if (useCamera) {
             takePic()
         } else {
             selectPic()
@@ -54,24 +59,34 @@ class ImagePickerActivity : Activity() {
     private fun extractExtrasFromIntent() {
         intent?.extras?.let { bundle ->
 
-            //CAMERA RELATED
-            useCamera = bundle.getBoolean(BundleHelper.EXTRA_USE_CAMERA, false)
-            if (useCamera) {
-                cameraFileName = bundle.getString(BundleHelper.EXTRA_CAMERA_FILENAME, "")
-                cameraReplaceIfExist =
-                    bundle.getBoolean(BundleHelper.EXTRA_CAMERA_REPLACE_IF_EXISTING, false)
-                cameraFolderName =
-                    bundle.getString(BundleHelper.EXTRA_CAMERA_FOLDER_NAME, "AngelImages")
-            }
+            //VIDEO RLATED
+            useVideo = bundle.getBoolean(BundleHelper.EXTRA_USE_VIDEO, false)
+            if (!useVideo) {
+                //PHOTO RELATED
+                isMultiImageSelect =
+                    bundle.getBoolean(BundleHelper.EXTRA_IMAGE_MULTI_SELECT, false)
 
-            //CROPPING RELATED
-            bundle.getString(BundleHelper.EXTRA_CROP_DEST_URI, "").also {
-                if (!it.isNullOrBlank()) {
-                    cropDestUri = Uri.parse(it)
-                    cropRatioX = bundle.getFloat(BundleHelper.EXTRA_CROP_RATIO_X, 0f)
-                    cropRatioY = bundle.getFloat(BundleHelper.EXTRA_CROP_RATIO_Y, 0f)
-                    cropMaxWidth = bundle.getInt(BundleHelper.EXTRA_CROP_MAX_WIDTH, 0)
-                    cropMaxHeight = bundle.getInt(BundleHelper.EXTRA_CROP_MAX_HEIGHT, 0)
+                if (!isMultiImageSelect) {
+                    //CAMERA RELATED
+                    useCamera = bundle.getBoolean(BundleHelper.EXTRA_USE_CAMERA, false)
+                    if (useCamera) {
+                        cameraFileName = bundle.getString(BundleHelper.EXTRA_CAMERA_FILENAME, "")
+                        cameraReplaceIfExist =
+                            bundle.getBoolean(BundleHelper.EXTRA_CAMERA_REPLACE_IF_EXISTING, false)
+                        cameraFolderName =
+                            bundle.getString(BundleHelper.EXTRA_CAMERA_FOLDER_NAME, "AngelImages")
+                    }
+
+                    //CROPPING RELATED
+                    bundle.getString(BundleHelper.EXTRA_CROP_DEST_URI, "").also {
+                        if (!it.isNullOrBlank()) {
+                            cropDestUri = Uri.parse(it)
+                            cropRatioX = bundle.getFloat(BundleHelper.EXTRA_CROP_RATIO_X, 0f)
+                            cropRatioY = bundle.getFloat(BundleHelper.EXTRA_CROP_RATIO_Y, 0f)
+                            cropMaxWidth = bundle.getInt(BundleHelper.EXTRA_CROP_MAX_WIDTH, 0)
+                            cropMaxHeight = bundle.getInt(BundleHelper.EXTRA_CROP_MAX_HEIGHT, 0)
+                        }
+                    }
                 }
             }
         }
@@ -88,16 +103,26 @@ class ImagePickerActivity : Activity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+
         when (requestCode) {
             101 -> {
                 print("received image $data")
                 if (resultCode == RESULT_OK) {
-                    if (cropDestUri != null) {
+                    if (cropDestUri != null && !isMultiImageSelect) {
                         handleCrop(data?.data, cropDestUri)
                     } else {
                         handleImageReady(data)
                     }
                 } else {
+                    setResult(resultCode, data)
+                    finish()
+                }
+            }
+            104 -> {
+                print("received video $data")
+                if (resultCode == RESULT_OK) {
+                    handleImageReady(data)
+                }else {
                     setResult(resultCode, data)
                     finish()
                 }
@@ -118,6 +143,7 @@ class ImagePickerActivity : Activity() {
                 }
             }
             103 -> {
+                print("Crop image")
                 if (resultCode == RESULT_OK && data != null) {
                     handleCropReady(data)
                 } else {
@@ -155,27 +181,43 @@ class ImagePickerActivity : Activity() {
 
     private fun handleImageReady(data: Intent?) {
         data?.let { intent ->
-            intent.data?.let { uri ->
-                contentResolver.query(
-                    uri, null, null, null, null
-                )?.use { c ->
 
-                    lastModifiedDate = try {
-                        val colDateModified = c
-                            .getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
-                        c.moveToFirst()
-                        c.getLong(colDateModified)
-                    } catch (e: Exception) {
-                        0
+            print("mime: ${intent.type}")
+            if (intent.clipData != null) {
+                val items = intent.clipData?.itemCount ?: 0
+                print("found $items images")
+                for (i in 0..items) {
+                    val uri = intent.clipData?.getItemAt(i)
+                    print("$i:  $uri ${getMimeType(uri?.uri)}")
+                }
+            } else {
+
+                intent.data?.let { uri ->
+                    print("single path: ${intent.data?.path} ${getMimeType(uri)}")
+
+
+                    contentResolver.query(
+                        uri, null, null, null, null
+                    )?.use { c ->
+
+                        lastModifiedDate = try {
+                            val colDateModified = c
+                                .getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+                            c.moveToFirst()
+                            c.getLong(colDateModified)
+                        } catch (e: Exception) {
+                            0
+                        }
+                        print("Date modified : $lastModifiedDate")
+                        intent.putExtra(BundleHelper.EXTRA_FILE_LAST_MOD, lastModifiedDate)
                     }
-                    print("Date modified : $lastModifiedDate")
-                    intent.putExtra(BundleHelper.EXTRA_FILE_LAST_MOD, lastModifiedDate)
                 }
             }
         }
         setResult(RESULT_OK, data)
         finish()
     }
+
 
     private fun handleCrop(sourceUri: Uri?, destUri: Uri?) {
         if (sourceUri == null || destUri == null) {
@@ -194,10 +236,29 @@ class ImagePickerActivity : Activity() {
         }
     }
 
+    private fun selectVideo() {
+        Intent(Intent.ACTION_GET_CONTENT).also { chooseImageIntent ->
+            chooseImageIntent.type = "video/*"
+
+            // Ensure that there's a gallery activity to handle the intent
+            chooseImageIntent.resolveActivity(packageManager)?.also {
+                startActivityForResult(
+                    // chooseImageIntent,
+                    Intent.createChooser(
+                        chooseImageIntent, getString(R.string.label_select_video)
+                    ),
+                    104
+                )
+            }
+        }
+    }
     private fun selectPic() {
+
         Intent(Intent.ACTION_GET_CONTENT).also { chooseImageIntent ->
             chooseImageIntent.type = "image/*"
-
+            if (isMultiImageSelect) {
+                chooseImageIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            }
             // Ensure that there's a gallery activity to handle the intent
             chooseImageIntent.resolveActivity(packageManager)?.also {
                 startActivityForResult(
@@ -209,6 +270,7 @@ class ImagePickerActivity : Activity() {
                 )
             }
         }
+
     }
 
     private fun takePic() {
@@ -254,6 +316,20 @@ class ImagePickerActivity : Activity() {
         } else {
             cameraFileName
         }
+    }
+
+    fun getMimeType(uri: Uri?): String {
+        return uri?.let {
+            var mimeType: String? = null
+            mimeType = if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
+                val cr: ContentResolver = applicationContext.contentResolver
+                cr.getType(uri)
+            } else {
+                val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
+                MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase())
+            }
+            mimeType
+        } ?: ""
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -374,6 +450,7 @@ class ImagePickerActivity : Activity() {
             }
         }
     }
+
 
     companion object {
         private const val TAG = "Angel: ImgPickA"
