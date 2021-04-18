@@ -20,18 +20,26 @@
         <ImageView
             android:id="@+id/iv_image"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            tools:ignore="ContentDescription" />
+
+        <VideoView
+            android:id="@+id/video_view"
+            android:layout_gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"  />
 
     </com.google.android.material.card.MaterialCardView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="100dp"
+        android:elevation="3dp"
         android:orientation="horizontal"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintBottom_toBottomOf="@id/mcv_image"
-        app:layout_constraintHeight_percent=".1"
+        app:layout_constraintBottom_toTopOf="@id/btn_select_image_single"
+
         tools:listitem="@layout/rv_item_image" />
 
 
@@ -42,7 +50,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
-        app:layout_constraintBottom_toTopOf="@id/btn_select_image_single"
+        app:layout_constraintBottom_toTopOf="@id/rv"
         app:layout_constraintTop_toBottomOf="@id/mcv_image"
         tools:layout_editor_absoluteX="16dp" />
 
@@ -52,9 +60,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Camera"
-        app:layout_constraintHorizontal_chainStyle="spread_inside"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/btn_select_image_single"
+        app:layout_constraintHorizontal_chainStyle="spread_inside"
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button

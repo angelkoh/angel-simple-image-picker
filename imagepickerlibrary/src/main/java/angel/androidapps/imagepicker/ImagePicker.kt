@@ -3,10 +3,15 @@
 package angel.androidapps.imagepicker
 
 import android.app.Activity
+import android.content.ContentResolver
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.webkit.MimeTypeMap
 import androidx.annotation.Keep
 import androidx.fragment.app.Fragment
+import java.util.*
+import kotlin.collections.ArrayList
 
 // * Created by Angel on 3/11/2020 1:34 PM.  
 // * Originally created for project "SAF test".
@@ -18,7 +23,8 @@ import androidx.fragment.app.Fragment
 @Keep
 class ImagePicker {
 
-   @Keep companion object {
+    @Keep
+    companion object {
 
 
 //        private const val TAG = "Angel: ImagePicker"
@@ -42,9 +48,47 @@ class ImagePicker {
             callback.invoke(getUri(data), BundleHelper.getFileLastModifiedDate(data))
         }
 
+        fun getLastModifiedDate(data: Intent?) = BundleHelper.getFileLastModifiedDate(data)
+
+        fun getUris(data: Intent?): List<Uri> {
+            return when {
+                data == null ->                    emptyList()
+
+                data.clipData != null -> {
+                    val result = ArrayList<Uri>()
+                    data.clipData?.let { clipData ->
+                        val items = clipData.itemCount
+                        for (i in 0 until items) {
+                            clipData.getItemAt(i)?.uri?.let { result.add(it) }
+                        }
+                    }
+                    result
+                }
+                else -> {
+                    val uri = getUri(data)
+                    if (uri == null) emptyList() else listOf(uri)
+                }
+            }
+        }
+
+
+    fun getMimeType(context: Context,uri: Uri?): String {
+        return uri?.let {
+            val mimeType  = if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
+                val cr: ContentResolver = context.contentResolver
+                cr.getType(uri)
+            } else {
+                val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
+                MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase(Locale.ROOT))
+            }
+            mimeType
+        } ?: ""
     }
 
-   @Keep class Builder(private val activity: Activity) {
+    }
+
+    @Keep
+    class Builder(private val activity: Activity) {
         private var fragment: Fragment? = null
 
         private val bundleHelper = BundleHelper()
@@ -78,16 +122,16 @@ class ImagePicker {
         }
 
 
-       fun selectVideo(): Builder {
-           bundleHelper.selectVideo(true)
-           return this
-       }
+        fun selectVideo(): Builder {
+            bundleHelper.selectVideo(true)
+            return this
+        }
 
-       fun multiSelect(): Builder {
+        fun multiSelect(): Builder {
             bundleHelper.multiSelect(true)
-           return this
+            return this
 
-       }
+        }
 
         fun start(reqCode: Int) {
 
@@ -102,5 +146,5 @@ class ImagePicker {
             }
         }
 
-   }
+    }
 }

@@ -1,7 +1,11 @@
 package angel.androidapps.imagepicker
 
+import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.*
+import android.content.ClipData
+import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -9,7 +13,6 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
-import android.webkit.MimeTypeMap
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
@@ -47,19 +50,17 @@ class ImagePickerActivity : Activity() {
 
         extractExtrasFromIntent()
 
-        if (useVideo) {
-selectVideo()
-        } else if (useCamera) {
-            takePic()
-        } else {
-            selectPic()
+        when {
+            useVideo -> selectVideo()
+            useCamera -> takePic()
+            else -> selectPic()
         }
     }
 
     private fun extractExtrasFromIntent() {
         intent?.extras?.let { bundle ->
 
-            //VIDEO RLATED
+            //VIDEO RELATED
             useVideo = bundle.getBoolean(BundleHelper.EXTRA_USE_VIDEO, false)
             if (!useVideo) {
                 //PHOTO RELATED
@@ -122,7 +123,7 @@ selectVideo()
                 print("received video $data")
                 if (resultCode == RESULT_OK) {
                     handleImageReady(data)
-                }else {
+                } else {
                     setResult(resultCode, data)
                     finish()
                 }
@@ -182,38 +183,27 @@ selectVideo()
     private fun handleImageReady(data: Intent?) {
         data?.let { intent ->
 
-            print("mime: ${intent.type}")
-            if (intent.clipData != null) {
-                val items = intent.clipData?.itemCount ?: 0
-                print("found $items images")
-                for (i in 0..items) {
-                    val uri = intent.clipData?.getItemAt(i)
-                    print("$i:  $uri ${getMimeType(uri?.uri)}")
-                }
-            } else {
+            intent.data?.let { uri ->
+                print("data path: ${intent.data?.path}")
 
-                intent.data?.let { uri ->
-                    print("single path: ${intent.data?.path} ${getMimeType(uri)}")
+                contentResolver.query(
+                    uri, null, null, null, null
+                )?.use { c ->
 
-
-                    contentResolver.query(
-                        uri, null, null, null, null
-                    )?.use { c ->
-
-                        lastModifiedDate = try {
-                            val colDateModified = c
-                                .getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
-                            c.moveToFirst()
-                            c.getLong(colDateModified)
-                        } catch (e: Exception) {
-                            0
-                        }
-                        print("Date modified : $lastModifiedDate")
-                        intent.putExtra(BundleHelper.EXTRA_FILE_LAST_MOD, lastModifiedDate)
+                    lastModifiedDate = try {
+                        val colDateModified = c
+                            .getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+                        c.moveToFirst()
+                        c.getLong(colDateModified)
+                    } catch (e: Exception) {
+                        0
                     }
+                    print("Date modified : $lastModifiedDate")
+                    intent.putExtra(BundleHelper.EXTRA_FILE_LAST_MOD, lastModifiedDate)
                 }
             }
         }
+
         setResult(RESULT_OK, data)
         finish()
     }
@@ -252,12 +242,13 @@ selectVideo()
             }
         }
     }
+
     private fun selectPic() {
 
         Intent(Intent.ACTION_GET_CONTENT).also { chooseImageIntent ->
             chooseImageIntent.type = "image/*"
             if (isMultiImageSelect) {
-                chooseImageIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                chooseImageIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             }
             // Ensure that there's a gallery activity to handle the intent
             chooseImageIntent.resolveActivity(packageManager)?.also {
@@ -273,6 +264,7 @@ selectVideo()
 
     }
 
+    @SuppressLint("ObsoleteSdkInt")
     private fun takePic() {
         Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             .also { takePictureIntent ->
@@ -318,19 +310,18 @@ selectVideo()
         }
     }
 
-    fun getMimeType(uri: Uri?): String {
-        return uri?.let {
-            var mimeType: String? = null
-            mimeType = if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
-                val cr: ContentResolver = applicationContext.contentResolver
-                cr.getType(uri)
-            } else {
-                val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
-                MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase())
-            }
-            mimeType
-        } ?: ""
-    }
+//    fun getMimeType(uri: Uri?): String {
+//        return uri?.let {
+//            val mimeType  = if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
+//                val cr: ContentResolver = applicationContext.contentResolver
+//                cr.getType(uri)
+//            } else {
+//                val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
+//                MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase(Locale.ROOT))
+//            }
+//            mimeType
+//        } ?: ""
+//    }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun getExistingCameraImageUriOrNullQ(): Uri? {
