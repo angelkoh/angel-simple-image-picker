@@ -178,9 +178,13 @@ class ImagePickerActivity : Activity() {
 
     private fun handleCameraReady() {
         intent = Intent().also {
-            it.data = cameraUri
             it.putExtra(BundleHelper.EXTRA_FILE_LAST_MOD, System.currentTimeMillis())
-            it.putExtra(BundleHelper.EXTRA_FILE_PATH_LEGACY, cameraFileLegacy?.absolutePath ?: "")
+            if (!useCameraDefaultOutput) {
+                it.data = cameraUri
+                it.putExtra(
+                    BundleHelper.EXTRA_FILE_PATH_LEGACY, cameraFileLegacy?.absolutePath ?: ""
+                )
+            }
         }
         setResult(RESULT_OK, intent)
         finish()
