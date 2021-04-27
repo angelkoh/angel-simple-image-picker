@@ -52,7 +52,7 @@ class ImagePicker {
 
         fun getUris(data: Intent?): List<Uri> {
             return when {
-                data == null ->                    emptyList()
+                data == null -> emptyList()
 
                 data.clipData != null -> {
                     val result = ArrayList<Uri>()
@@ -72,18 +72,19 @@ class ImagePicker {
         }
 
 
-    fun getMimeType(context: Context,uri: Uri?): String {
-        return uri?.let {
-            val mimeType  = if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
-                val cr: ContentResolver = context.contentResolver
-                cr.getType(uri)
-            } else {
-                val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
-                MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase(Locale.ROOT))
-            }
-            mimeType
-        } ?: ""
-    }
+        fun getMimeType(context: Context, uri: Uri?): String {
+            return uri?.let {
+                val mimeType = if (ContentResolver.SCHEME_CONTENT == uri.scheme) {
+                    val cr: ContentResolver = context.contentResolver
+                    cr.getType(uri)
+                } else {
+                    val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
+                    MimeTypeMap.getSingleton()
+                        .getMimeTypeFromExtension(fileExtension.toLowerCase(Locale.ROOT))
+                }
+                mimeType
+            } ?: ""
+        }
 
     }
 
@@ -97,6 +98,22 @@ class ImagePicker {
             this.fragment = fragment
         }
 
+        fun pickVideoFromCamera():Builder{
+            bundleHelper.pickFromCamera()
+            return this
+        }
+        fun pickVideoFromCamera(
+            folderName: String = "",
+            fileName: String = "",
+            replaceIfFileExist: Boolean = false
+        ): Builder {
+            bundleHelper.pickVideoFromCamera(folderName, fileName, replaceIfFileExist)
+            return this
+        }
+        fun pickFromCamera():Builder{
+            bundleHelper.pickFromCamera()
+            return this
+        }
         fun pickFromCamera(
             folderName: String = "",
             fileName: String = "",

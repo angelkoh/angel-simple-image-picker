@@ -36,6 +36,10 @@ class MainActivity : AppCompatActivity() {
 
         rv.adapter = rvAdapter
         findViewById<Button>(R.id.btn_take_picture).setOnClickListener { takePicture() }
+        findViewById<Button>(R.id.btn_take_picture).setOnLongClickListener {
+            takeVideo()
+            true
+        }
         findViewById<Button>(R.id.btn_select_image_single).setOnClickListener { selectPicture() }
         findViewById<Button>(R.id.btn_select_video).setOnClickListener { selectVideo() }
         findViewById<Button>(R.id.btn_select_image_multiple).setOnClickListener { selectMultiplePicture() }
@@ -68,7 +72,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun takePicture() {
-        print("Select Image.")
+        print("Camera Image.")
 
         StoragePermissionHandler.let {
             if (
@@ -82,6 +86,24 @@ class MainActivity : AppCompatActivity() {
                     .withAspectRatio(2f, 3f)
                     .withMaxResultSize(200, 300)
                     .start(TAKE_PICTURE_REQ_CODE)
+            } else {
+                print("REQUIRE PERMISSION (TAKE PICTURE)")
+            }
+        }
+    }
+    private fun takeVideo() {
+        print("Camera Video.")
+
+        StoragePermissionHandler.let {
+            if (
+                !it.requireStoragePermission() ||
+                it.requestIfNeededStoragePermission(this, TAKE_PICTURE_PERMISSION_REQ_CODE)
+            ) {
+
+                ImagePicker.with(this)
+                    .pickVideoFromCamera(FOLDER_NAME, "avatar.mp4", true)
+
+                    .start(SELECT_VIDEO_REQ_CODE)
             } else {
                 print("REQUIRE PERMISSION (TAKE PICTURE)")
             }

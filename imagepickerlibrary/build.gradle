@@ -8,8 +8,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 30
-        versionCode 6
-        versionName "1.2.0"
+        versionCode 7
+        versionName "1.2.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -17,6 +17,7 @@ android {
     }
 
 /*
+1.2.1 added video camera
 1.2.0 added video and multi image selection
 1.0.2 added annotation keep
 

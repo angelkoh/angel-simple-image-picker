@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Intent
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -25,20 +26,21 @@ import java.util.*
 @Keep
 class ImagePickerActivity : Activity() {
 
-    private var lastModifiedDate = 0L
-
     private var isMultiImageSelect = false
-
     private var useVideo = false
 
+    //CAMERA RELATED
     private var useCamera = false
+    private var useCameraVideo = false
+    private var useCameraDefaultOutput = false
     private var cameraFolderName = "Angel"
 
-    private var cameraImageUri: Uri? = null
-    private var cameraFile: File? = null
+    private var cameraUri: Uri? = null
+    private var cameraFileLegacy: File? = null
     private var cameraFileName = ""
     private var cameraReplaceIfExist = false
 
+    //CROP RELATED
     private var cropDestUri: Uri? = null
     private var cropRatioX = 0f
     private var cropRatioY = 0f
@@ -52,41 +54,44 @@ class ImagePickerActivity : Activity() {
 
         when {
             useVideo -> selectVideo()
-            useCamera -> takePic()
+            useCamera -> if (useCameraVideo) takeVideo() else takePic()
             else -> selectPic()
         }
     }
 
     private fun extractExtrasFromIntent() {
         intent?.extras?.let { bundle ->
+            BundleHelper.apply {
 
-            //VIDEO RELATED
-            useVideo = bundle.getBoolean(BundleHelper.EXTRA_USE_VIDEO, false)
-            if (!useVideo) {
+                //VIDEO RELATED
+                useVideo = bundle.getBoolean(EXTRA_VIDEO_SELECT, false)
+
                 //PHOTO RELATED
                 isMultiImageSelect =
-                    bundle.getBoolean(BundleHelper.EXTRA_IMAGE_MULTI_SELECT, false)
+                    bundle.getBoolean(EXTRA_IMAGE_MULTI_SELECT, false)
 
-                if (!isMultiImageSelect) {
-                    //CAMERA RELATED
-                    useCamera = bundle.getBoolean(BundleHelper.EXTRA_USE_CAMERA, false)
-                    if (useCamera) {
-                        cameraFileName = bundle.getString(BundleHelper.EXTRA_CAMERA_FILENAME, "")
-                        cameraReplaceIfExist =
-                            bundle.getBoolean(BundleHelper.EXTRA_CAMERA_REPLACE_IF_EXISTING, false)
-                        cameraFolderName =
-                            bundle.getString(BundleHelper.EXTRA_CAMERA_FOLDER_NAME, "AngelImages")
-                    }
+                //CAMERA RELATED
+                useCamera = bundle.getBoolean(EXTRA_USE_CAMERA, false)
+                if (useCamera) {
+                    useCameraVideo = bundle.getBoolean(EXTRA_USE_CAMERA_VIDEO, false)
+                    useCameraDefaultOutput =
+                        bundle.getBoolean(EXTRA_CAMERA_USE_DEFAULT_OUTPUT, true)
+                    cameraFileName = bundle.getString(EXTRA_CAMERA_FILENAME, "")
+                    cameraReplaceIfExist =
+                        bundle.getBoolean(EXTRA_CAMERA_REPLACE_IF_EXISTING, false)
+                    cameraFolderName =
+                        bundle.getString(EXTRA_CAMERA_FOLDER_NAME, "AngelImages")
+                }
 
-                    //CROPPING RELATED
-                    bundle.getString(BundleHelper.EXTRA_CROP_DEST_URI, "").also {
-                        if (!it.isNullOrBlank()) {
-                            cropDestUri = Uri.parse(it)
-                            cropRatioX = bundle.getFloat(BundleHelper.EXTRA_CROP_RATIO_X, 0f)
-                            cropRatioY = bundle.getFloat(BundleHelper.EXTRA_CROP_RATIO_Y, 0f)
-                            cropMaxWidth = bundle.getInt(BundleHelper.EXTRA_CROP_MAX_WIDTH, 0)
-                            cropMaxHeight = bundle.getInt(BundleHelper.EXTRA_CROP_MAX_HEIGHT, 0)
-                        }
+
+                //CROPPING RELATED
+                bundle.getString(EXTRA_CROP_DEST_URI, "").let {
+                    if (!it.isNullOrBlank()) {
+                        cropDestUri = Uri.parse(it)
+                        cropRatioX = bundle.getFloat(EXTRA_CROP_RATIO_X, 0f)
+                        cropRatioY = bundle.getFloat(EXTRA_CROP_RATIO_Y, 0f)
+                        cropMaxWidth = bundle.getInt(EXTRA_CROP_MAX_WIDTH, 0)
+                        cropMaxHeight = bundle.getInt(EXTRA_CROP_MAX_HEIGHT, 0)
                     }
                 }
             }
@@ -94,56 +99,57 @@ class ImagePickerActivity : Activity() {
     }
 
     override fun onBackPressed() {
-
-        intent = Intent().also {
-            it.putExtra(BundleHelper.EXTRA_ERROR, "Image pick cancelled")
+        Intent().let { intent ->
+            intent.putExtra(BundleHelper.EXTRA_ERROR, "Image pick cancelled")
+            setResult(RESULT_CANCELED, intent)
+            finish()
         }
-        setResult(RESULT_CANCELED, intent)
-
-        finish()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 
         when (requestCode) {
-            101 -> {
+            TYPE_SELECT_IMAGE -> {
                 print("received image $data")
                 if (resultCode == RESULT_OK) {
                     if (cropDestUri != null && !isMultiImageSelect) {
                         handleCrop(data?.data, cropDestUri)
                     } else {
-                        handleImageReady(data)
+                        handleMediaReady(data)
                     }
                 } else {
                     setResult(resultCode, data)
                     finish()
                 }
             }
-            104 -> {
-                print("received video $data")
-                if (resultCode == RESULT_OK) {
-                    handleImageReady(data)
-                } else {
-                    setResult(resultCode, data)
-                    finish()
-                }
-            }
-            102 -> {
-                print("received camera $data")
+            TYPE_SELECT_CAMERA_IMAGE -> {
+                print("received camera image $data")
                 if (resultCode == RESULT_OK) {
                     invokeMediaScannerIfNeeded()
 
                     if (cropDestUri != null) {
-                        handleCrop(cameraImageUri, cropDestUri)
+                        handleCrop(data?.data, cropDestUri)
                     } else {
-                        handleCameraImageReady()
+                        handleCameraReady()
                     }
                 } else {
                     setResult(resultCode, data)
                     finish()
                 }
             }
-            103 -> {
+            TYPE_SELECT_VIDEO -> {
+                print("received video $data")
+                if (resultCode == RESULT_OK) {
+                    handleMediaReady(data)
+                } else {
+                    setResult(resultCode, data)
+                    finish()
+                }
+            }
+            TYPE_SELECT_CAMERA_VIDEO -> {
+                handleCameraReady()
+            }
+            TYPE_CROP_IMAGE -> {
                 print("Crop image")
                 if (resultCode == RESULT_OK && data != null) {
                     handleCropReady(data)
@@ -156,6 +162,9 @@ class ImagePickerActivity : Activity() {
         }
     }
 
+    //=====================
+    //POPULATE INTO RESULT
+    //=====================
     private fun handleCropReady(data: Intent) {
 
         intent = Intent().also {
@@ -167,20 +176,17 @@ class ImagePickerActivity : Activity() {
         finish()
     }
 
-    private fun handleCameraImageReady() {
+    private fun handleCameraReady() {
         intent = Intent().also {
-            it.data = cameraImageUri
-            it.putExtra(BundleHelper.EXTRA_FILE_LAST_MOD, lastModifiedDate)
-            it.putExtra(
-                BundleHelper.EXTRA_FILE_PATH,
-                cameraFile?.absolutePath ?: ""
-            )
+            it.data = cameraUri
+            it.putExtra(BundleHelper.EXTRA_FILE_LAST_MOD, System.currentTimeMillis())
+            it.putExtra(BundleHelper.EXTRA_FILE_PATH_LEGACY, cameraFileLegacy?.absolutePath ?: "")
         }
         setResult(RESULT_OK, intent)
         finish()
     }
 
-    private fun handleImageReady(data: Intent?) {
+    private fun handleMediaReady(data: Intent?) {
         data?.let { intent ->
 
             intent.data?.let { uri ->
@@ -190,7 +196,7 @@ class ImagePickerActivity : Activity() {
                     uri, null, null, null, null
                 )?.use { c ->
 
-                    lastModifiedDate = try {
+                    val lastModifiedDate = try {
                         val colDateModified = c
                             .getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
                         c.moveToFirst()
@@ -208,7 +214,9 @@ class ImagePickerActivity : Activity() {
         finish()
     }
 
-
+    //================
+    //CROP ACTIONS
+    //================
     private fun handleCrop(sourceUri: Uri?, destUri: Uri?) {
         if (sourceUri == null || destUri == null) {
             setResult(RESULT_CANCELED, null)
@@ -221,11 +229,13 @@ class ImagePickerActivity : Activity() {
             if (cropMaxWidth > 0 && cropMaxHeight > 0) {
                 cropper.withMaxResultSize(cropMaxWidth, cropMaxHeight)
             }
-            cropper.start(this, 103)
-
+            cropper.start(this, TYPE_CROP_IMAGE)
         }
     }
 
+    //================
+    //SELECTION ACTION
+    //================
     private fun selectVideo() {
         Intent(Intent.ACTION_GET_CONTENT).also { chooseImageIntent ->
             chooseImageIntent.type = "video/*"
@@ -237,7 +247,7 @@ class ImagePickerActivity : Activity() {
                     Intent.createChooser(
                         chooseImageIntent, getString(R.string.label_select_video)
                     ),
-                    104
+                    TYPE_SELECT_VIDEO
                 )
             }
         }
@@ -257,54 +267,111 @@ class ImagePickerActivity : Activity() {
                     Intent.createChooser(
                         chooseImageIntent, getString(R.string.label_select_picture)
                     ),
-                    101
+                    TYPE_SELECT_IMAGE
                 )
             }
         }
 
     }
 
-    @SuppressLint("ObsoleteSdkInt")
-    private fun takePic() {
-        Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            .also { takePictureIntent ->
-                print("taking picture...")
-                val uri = setCameraImageUri()
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
-                // Ensure that there's a camera activity to handle the intent
-                takePictureIntent.resolveActivity(packageManager)?.also {
+    //================
+    //CAMERA ACTION
+    //================
+    private fun takeVideo() {
+        Intent(MediaStore.ACTION_VIDEO_CAPTURE)
+            .also { videoIntent ->
+                print("taking video...")
+                videoIntent.resolveActivity(packageManager)?.also {
+
+                    if (!useCameraDefaultOutput) {
+                        cameraUri = getCameraVideoUri()
+                        videoIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri)
+
+                        //permission bug for pre lollipop
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
+                            videoIntent.clipData = ClipData.newRawUri("", cameraUri)
+                        }
+                    }
 
                     //permission bug for pre lollipop
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
-                        takePictureIntent.clipData = ClipData.newRawUri("", uri)
-                        takePictureIntent.addFlags(
+                        videoIntent.addFlags(
                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                         )
                     }
 
-                    print(
-                        "takePictureIntent -> $takePictureIntent"
-                    )
-                    startActivityForResult(takePictureIntent, 102)
+                    print("takePictureIntent -> $videoIntent")
+                    startActivityForResult(videoIntent, TYPE_SELECT_CAMERA_VIDEO)
+
                 } ?: print("Cannot find camera app.")
             }
     }
 
-    //IMAGE URI (FOR TAKING PHOTOS)
-    private fun setCameraImageUri(): Uri {
+    @SuppressLint("ObsoleteSdkInt")
+    private fun takePic() {
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            .also { cameraIntent ->
+                print("taking picture...")
+                // Ensure that there's a camera activity to handle the intent
+                cameraIntent.resolveActivity(packageManager)?.also {
+
+                    if (!useCameraDefaultOutput) {
+                        cameraUri = getCameraImageUri()
+                        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri)
+
+                        //permission bug for pre lollipop
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
+                            cameraIntent.clipData = ClipData.newRawUri("", cameraUri)
+                        }
+                    }
+
+                    //permission bug for pre lollipop
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
+                        cameraIntent.addFlags(
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    }
+
+                    print("takePictureIntent -> $cameraIntent")
+                    startActivityForResult(cameraIntent, TYPE_SELECT_CAMERA_IMAGE)
+                } ?: print("Cannot find camera app.")
+            }
+    }
+
+    //IMAGE URI (FOR TAKING PHOTOS/VIDEOS)
+    private fun getCameraImageUri(): Uri {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             print("set camera Uri")
-            setCameraImageUriQ()
+            getCameraUriQ(getJpgFileName())
         } else {
             print("set camera Uri (legacy)")
-            setCameraImageUriLegacy()
+            getCameraUriLegacy(getJpgFileName())
         }
     }
 
-    private fun getFileName(): String {
+    private fun getCameraVideoUri(): Uri {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            print("set camera Uri")
+            getCameraUriQ(getMp4FileName())
+        } else {
+            print("set camera Uri (legacy)")
+            getCameraUriLegacy(getMp4FileName())
+        }
+    }
+
+    private fun getJpgFileName(): String {
         return if (cameraFileName.isBlank()) {
             "img_" + sdf.format(Date()) + ".jpg"
+        } else {
+            cameraFileName
+        }
+    }
+
+    private fun getMp4FileName(): String {
+        return if (cameraFileName.isBlank()) {
+            "vid_" + sdf.format(Date()) + ".mp4"
         } else {
             cameraFileName
         }
@@ -324,7 +391,7 @@ class ImagePickerActivity : Activity() {
 //    }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun getExistingCameraImageUriOrNullQ(): Uri? {
+    private fun getExistingCameraUriOrNullQ(fileName: String): Uri? {
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
             MediaStore.MediaColumns.DISPLAY_NAME,
@@ -334,7 +401,7 @@ class ImagePickerActivity : Activity() {
 
         val selection =
             "${MediaStore.MediaColumns.RELATIVE_PATH}='Pictures/$cameraFolderName/' AND " +
-                    "${MediaStore.MediaColumns.DISPLAY_NAME}='${getFileName()}' "
+                    "${MediaStore.MediaColumns.DISPLAY_NAME}='$fileName' "
 
         contentResolver.query(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -343,66 +410,54 @@ class ImagePickerActivity : Activity() {
             if (c != null && c.count >= 1) {
                 // already inserted, update this row or do sth else
                 print("has cursor result")
-                c.moveToFirst().let {
-
-                    val id = c.getLong(c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
-                    val displayName =
-                        c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME))
-                    val relativePath =
-                        c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.RELATIVE_PATH))
-
-                    lastModifiedDate =
-                        c.getLong(c.getColumnIndex(MediaStore.MediaColumns.DATE_MODIFIED))
-                    cameraImageUri =
-                        ContentUris.withAppendedId(
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            id
-                        )
-                    print(
-                        "image uri update $displayName $relativePath $cameraImageUri ($lastModifiedDate)"
-                    )
-
-                    return cameraImageUri
-                }
+                c.moveToFirst()
+                val id = c.getLong(c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
+                return ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+                    .also {
+                        debugPrintFileCursor(c, it)
+                    }
             }
         }
         print("image not created yet")
         return null
     }
 
+    private fun debugPrintFileCursor(c: Cursor, uri: Uri) {
+        val displayName = c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME))
+        val relativePath = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.RELATIVE_PATH))
+        } else ""
+        val lastModifiedDate = c.getLong(c.getColumnIndex(MediaStore.MediaColumns.DATE_MODIFIED))
+        print("image uri update [$displayName]: $relativePath $uri ($lastModifiedDate)")
+    }
+
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun setCameraImageUriQ(): Uri {
+    private fun getCameraUriQ(fileName: String): Uri {
 
         val resolver = contentResolver
 
+        var uri: Uri? = null
         if (cameraFileName.isNotBlank()) {
-            cameraImageUri = getExistingCameraImageUriOrNullQ()
+            uri = getExistingCameraUriOrNullQ(fileName)
         }
-        if (cameraImageUri == null || cameraReplaceIfExist) {
+        if (uri == null || cameraReplaceIfExist) {
 
             val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, getFileName())
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                 put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
                 put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$cameraFolderName")
             }
-            cameraImageUri =
-                resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-            print(
-                "image uri insert $cameraImageUri"
-            )
+            uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
         }
-        print(
-            "image uri $cameraImageUri"
-        )
-        return cameraImageUri!!
+        print("image uri $uri")
+        return uri!!
     }
 
     //SAVE INTO FILE (https://developer.android.com/training/camera/photobasics)
     //https://medium.com/@pednekarshashank33/android-10s-scoped-storage-image-picker-gallery-camera-d3dcca427bbf
+
     @Suppress("DEPRECATION")
-    private fun setCameraImageUriLegacy(): Uri {
-        // val folder = File("${getExternalFilesDir(Environment.DIRECTORY_DCIM)}",folderName)
+    private fun getCameraUriLegacy(fileName: String): Uri {
         val folder =
             File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
@@ -410,19 +465,18 @@ class ImagePickerActivity : Activity() {
             )
         folder.mkdirs()
 
-        cameraFile = File(folder, getFileName()).also {
+        File(folder, fileName).also {
+            cameraFileLegacy = it
+            //note: legacy, will always replace existing.
             if (it.exists() && cameraReplaceIfExist) it.delete()
             if (!it.exists()) it.createNewFile()
-            lastModifiedDate = System.currentTimeMillis()
 
-            cameraImageUri = FileProvider.getUriForFile(
+            return FileProvider.getUriForFile(
                 this,
                 packageName + ".imagePicker." + getString(R.string.fp_authority),
                 it
             )
         }
-
-        return cameraImageUri!!
     }
 
     //media scanner
@@ -432,7 +486,7 @@ class ImagePickerActivity : Activity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             //invoke the system's media scanner to add your photo to the Media Provider's database,
             // making it available in the Android Gallery application and to other apps.
-            cameraFile?.let {
+            cameraFileLegacy?.let {
                 Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE).also { mediaScanIntent ->
                     print("invoke Media scanner")
                     mediaScanIntent.data = Uri.fromFile(it)
@@ -448,5 +502,11 @@ class ImagePickerActivity : Activity() {
         private fun print(s: String) = Log.d(TAG, s)
 
         private val sdf = SimpleDateFormat("yyMMdd_hhmmss", Locale.US)
+
+        private const val TYPE_CROP_IMAGE = 100
+        private const val TYPE_SELECT_IMAGE = 101
+        private const val TYPE_SELECT_VIDEO = 102
+        private const val TYPE_SELECT_CAMERA_IMAGE = 103
+        private const val TYPE_SELECT_CAMERA_VIDEO = 104
     }
 }
