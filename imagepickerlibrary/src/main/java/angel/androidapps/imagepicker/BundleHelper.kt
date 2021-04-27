@@ -24,21 +24,17 @@ class BundleHelper {
         bundle.putInt(EXTRA_CROP_MAX_HEIGHT, height)
     }
 
-    fun pickFromCamera() {
-        bundle.putBoolean(EXTRA_USE_CAMERA, true)
-        bundle.putBoolean(EXTRA_CAMERA_USE_DEFAULT_OUTPUT, true)
-    }
-
     fun pickFromCamera(folderName: String, fileName: String, replaceIfExist: Boolean) {
         bundle.putBoolean(EXTRA_USE_CAMERA, true)
-        bundle.putBoolean(EXTRA_CAMERA_USE_DEFAULT_OUTPUT, false)
+        bundle.putBoolean(EXTRA_CAMERA_USE_DEFAULT_VIDEO_OUTPUT, false)
         bundle.putString(EXTRA_CAMERA_FOLDER_NAME, folderName)
         bundle.putString(EXTRA_CAMERA_FILENAME, fileName)
         bundle.putBoolean(EXTRA_CAMERA_REPLACE_IF_EXISTING, replaceIfExist)
     }
 
     fun pickVideoFromCamera() {
-        pickFromCamera()
+        bundle.putBoolean(EXTRA_USE_CAMERA, true)
+        bundle.putBoolean(EXTRA_CAMERA_USE_DEFAULT_VIDEO_OUTPUT, true)
         bundle.putBoolean(EXTRA_USE_CAMERA_VIDEO, true)
     }
 
@@ -61,7 +57,7 @@ class BundleHelper {
         const val EXTRA_USE_CAMERA = "extra.use_camera"
         const val EXTRA_USE_CAMERA_VIDEO = "extra.use_camera_video"
 
-        const val EXTRA_CAMERA_USE_DEFAULT_OUTPUT = "extra.camera_use_default_output"
+        const val EXTRA_CAMERA_USE_DEFAULT_VIDEO_OUTPUT = "extra.camera_use_default_output"
         const val EXTRA_CAMERA_FOLDER_NAME = "extra.camera_folder_name"
         const val EXTRA_CAMERA_FILENAME = "extra.camera_filename"
         const val EXTRA_CAMERA_REPLACE_IF_EXISTING = "extra.camera_replace_if_exist"

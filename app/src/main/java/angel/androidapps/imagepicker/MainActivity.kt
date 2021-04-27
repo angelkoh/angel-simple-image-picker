@@ -81,7 +81,8 @@ class MainActivity : AppCompatActivity() {
             ) {
 
                 ImagePicker.with(this)
-                    .pickFromCamera(FOLDER_NAME, "avatar.jpg", true)
+                  .pickFromCamera(FOLDER_NAME, "avatar.jpg", true)
+                    //  .pickFromCamera()
                     .withCrop(getAvatarUri())
                     .withAspectRatio(2f, 3f)
                     .withMaxResultSize(200, 300)
@@ -101,7 +102,8 @@ class MainActivity : AppCompatActivity() {
             ) {
 
                 ImagePicker.with(this)
-                    .pickVideoFromCamera(FOLDER_NAME, "avatar.mp4", true)
+                    .pickVideoFromCamera()
+                  // .pickVideoFromCamera(FOLDER_NAME, "avatar.mp4", true)
 
                     .start(SELECT_VIDEO_REQ_CODE)
             } else {

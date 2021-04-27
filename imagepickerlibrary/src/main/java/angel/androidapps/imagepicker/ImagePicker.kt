@@ -110,10 +110,6 @@ class ImagePicker {
             bundleHelper.pickVideoFromCamera(folderName, fileName, replaceIfFileExist)
             return this
         }
-        fun pickFromCamera():Builder{
-            bundleHelper.pickFromCamera()
-            return this
-        }
         fun pickFromCamera(
             folderName: String = "",
             fileName: String = "",
