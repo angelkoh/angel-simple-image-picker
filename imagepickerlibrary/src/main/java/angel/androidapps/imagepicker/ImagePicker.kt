@@ -99,7 +99,7 @@ class ImagePicker {
         }
 
         fun pickVideoFromCamera():Builder{
-            bundleHelper.pickFromCamera()
+            bundleHelper.pickVideoFromCamera()
             return this
         }
         fun pickVideoFromCamera(
