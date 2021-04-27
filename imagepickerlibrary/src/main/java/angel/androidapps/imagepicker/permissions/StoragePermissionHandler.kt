@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.annotation.Keep
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 
 // * Created by Angel on 12/23/2019 3:34 PM.  
 // * Originally created for project "ContinuousLineArt".
@@ -42,11 +43,27 @@ object StoragePermissionHandler {
 
 
     fun requestIfNeededStoragePermission(activity: Activity, code: Int): Boolean {
-        return if ( hasStoragePermission(activity)) {
+        return if (hasStoragePermission(activity)) {
             true
         } else {
             ActivityCompat.requestPermissions(
                 activity,
+                arrayOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ),
+                code
+            )
+            false
+        }
+    }
+
+    fun requestIfNeededStoragePermission(fragment: Fragment, code: Int): Boolean {
+
+        return if (hasStoragePermission(fragment.context!!)) {
+            true
+        } else {
+            fragment.requestPermissions(
                 arrayOf(
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE

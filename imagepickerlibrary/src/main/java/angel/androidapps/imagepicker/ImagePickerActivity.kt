@@ -185,9 +185,9 @@ class ImagePickerActivity : Activity() {
                     BundleHelper.EXTRA_FILE_PATH_LEGACY, cameraFileLegacy?.absolutePath ?: ""
                 )
             }
+            setResult(RESULT_OK, it)
+            finish()
         }
-        setResult(RESULT_OK, data)
-        finish()
     }
 
     private fun handleMediaReady(data: Intent?) {
