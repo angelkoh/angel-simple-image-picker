@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
                 ImagePicker.with(this)
                     //  .pickFromCamera(FOLDER_NAME, "avatar.jpg", true)
                    .pickFromCamera()
-                 //   .withCrop(getAvatarUri())
+                    .withCrop(getAvatarUri())
                     .withAspectRatio(2f, 3f)
                     .withMaxResultSize(200, 300)
                     .start(TAKE_PICTURE_REQ_CODE)
