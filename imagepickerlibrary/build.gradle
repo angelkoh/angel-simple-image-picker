@@ -1,5 +1,9 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
+
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+    id 'maven-publish'
+}
 
 android {
     compileSdkVersion 33
@@ -13,14 +17,7 @@ android {
         setProperty("archivesBaseName", "ImagePickerLibrary-$versionName")
     }
 
-/*
-1.2.7 added ImagePicker.getIntent() for launcher.launch
-1.2.6 added manifest queries>intent>pick
-1.2.2 added video camera
-1.2.0 added video and multi image selection
-1.0.2 added annotation keep
 
- */
 
     buildTypes {
         release {
@@ -34,6 +31,30 @@ android {
     }
 
 }
+//https://jitpack.io/docs/BUILDING/
+//https://github.com/jitpack/android-example
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                from components.release
+                groupId = 'com.github.angelkoh'
+                artifactId = 'angel-simple-image-picker'
+                version = '1.2.8'
+            }
+        }
+    }
+}
+/*
+1.2.7 added ImagePicker.getIntent() for launcher.launch
+1.2.6 added manifest queries>intent>pick
+1.2.2 added video camera
+1.2.0 added video and multi image selection
+1.0.2 added annotation keep
+ */
+
+
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
