@@ -41,7 +41,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.angelkoh'
                 artifactId = 'angel-simple-image-picker'
-                version = '1.2.8'
+                version = '1.2.7'
             }
         }
     }
