@@ -11,7 +11,6 @@ import android.webkit.MimeTypeMap
 import androidx.annotation.Keep
 import androidx.fragment.app.Fragment
 import java.util.*
-import kotlin.collections.ArrayList
 
 // * Created by Angel on 3/11/2020 1:34 PM.  
 // * Originally created for project "SAF test".
@@ -148,15 +147,20 @@ class ImagePicker {
 
         fun start(reqCode: Int) {
 
-            val intent = Intent(activity, ImagePickerActivity::class.java)
-
-            intent.putExtras(bundleHelper.bundle)
+            val intent = getIntent()
 
             if (fragment != null) {
                 fragment?.startActivityForResult(intent, reqCode)
             } else {
                 activity.startActivityForResult(intent, reqCode)
             }
+        }
+
+        fun getIntent(): Intent {
+            val intent = Intent(activity, ImagePickerActivity::class.java)
+
+            intent.putExtras(bundleHelper.bundle)
+            return intent
         }
 
     }
