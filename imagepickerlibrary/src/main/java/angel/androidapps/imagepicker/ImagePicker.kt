@@ -79,7 +79,7 @@ class ImagePicker {
                 } else {
                     val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
                     MimeTypeMap.getSingleton()
-                        .getMimeTypeFromExtension(fileExtension.toLowerCase(Locale.ROOT))
+                        .getMimeTypeFromExtension(fileExtension.lowercase(Locale.ROOT))
                 }
                 mimeType
             } ?: ""

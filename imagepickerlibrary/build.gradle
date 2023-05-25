@@ -29,6 +29,7 @@ android {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
     }
+    namespace 'angel.androidapps.imagepicker'
 
 }
 //https://jitpack.io/docs/BUILDING/
@@ -41,12 +42,13 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.angelkoh'
                 artifactId = 'angel-simple-image-picker'
-                version = '1.2.7'
+                version = '1.2.8'
             }
         }
     }
 }
 /*
+1.2.8 jitpack publish
 1.2.7 added ImagePicker.getIntent() for launcher.launch
 1.2.6 added manifest queries>intent>pick
 1.2.2 added video camera
