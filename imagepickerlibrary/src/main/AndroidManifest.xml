@@ -40,14 +40,14 @@
             <action android:name="android.intent.action.PICK" />
         </intent>
         <!-- Gallery -->
-        <!--        <intent>-->
-        <!--            <action android:name="android.intent.action.GET_CONTENT" />-->
-        <!--        </intent>-->
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+        </intent>
         <!-- Browser -->
-        <!--        <intent>-->
-        <!--            <action android:name="android.intent.action.VIEW" />-->
-        <!--            <data android:scheme="http" />-->
-        <!--        </intent>-->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
     </queries>
 
 </manifest>
